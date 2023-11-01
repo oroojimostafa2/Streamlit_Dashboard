@@ -10,7 +10,7 @@ st.set_page_config(page_title="Superstore Dashboard", page_icon=":bar_chart:", l
 st.title(":bar_chart: SuperStore Data Dashboard")
 
 # Let us send the title up
-st.markdown(""" <style>.div.block-container{padding-top: 1rem;padding-bottom: 0rem;padding-left:\
+st.markdown(""" <style>.block-container{padding-top: 2rem;padding-bottom: 0rem;padding-left:\
              1rem}</style>""", unsafe_allow_html=True)
 
 # Upload the data or use the local data
@@ -90,7 +90,6 @@ else:
 #--------------------------------------------------------------------------------------
 # Plotting the Data
 category_df = df_filter.groupby(by="Category", as_index=False)["Sales"].sum()
-
 with col1:
     st.subheader("Category Wise Sale")
     fig = px.bar(category_df, x = "Category", y = "Sales", text = [f"${i}" for i in category_df["Sales"]])
@@ -98,6 +97,38 @@ with col1:
 
 with col2:
     st.subheader("State Wise Sale")
-    fig = px.pie(df_filter, values="Sales", names="State")
-    fig.update_traces(text = df_filter["Region"], textposition="outside")
+    fig = px.pie(df_filter, values="Sales", names="City")
+    fig.update_traces(text = df_filter["City"], textposition="outside")
     st.plotly_chart(fig, use_container_width=True)
+
+#----------------------------------------------------------------------------------------
+# Downloading the data of the graphs
+
+cl1, cl2 = st.columns(2)
+
+with cl1:
+    with st.expander("Category Wise Sale Data"):
+        st.write(category_df.style.background_gradient(cmap="Blues"))
+        csv = category_df.to_csv(index=False).encode("utf-8")
+        st.download_button("Download Data", data=csv, file_name="Category Wise Data.csv", mime="text/csv")
+
+with cl2:
+    with st.expander("City Wise Sale Data"):
+        city_df = df_filter.groupby(by="City", as_index=False)["Sales"].sum()
+        st.write(city_df.style.background_gradient(cmap="Oranges"))
+        csv = city_df.to_csv(index=False).encode("utf-8")
+        st.download_button("Download Data", data=csv, file_name="City Wise Sale Data.csv", mime="text/csv")
+
+#-------------------------------------------------------------------------------------------------------------
+# Now Time versus Sale Analysis
+df_filter["month-year"] = df_filter["Order Date"].dt.to_period("M")
+df_filter["month-year"] = df_filter["month-year"] .dt.strftime("%Y : %b")
+st.subheader("Sale/ Time Analysis")
+linechart = pd.DataFrame(df_filter.groupby(by="month-year", as_index=False)["Sales"].sum())
+fig = px.line(linechart, x = "month-year", y="Sales")
+st.plotly_chart(fig, use_container_width=True)
+
+with st.expander("Time Series Data"):
+    st.write(linechart.T.style.background_gradient(cmap="Reds"))
+    csv = linechart.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Data", data=csv, file_name="Time_Sales.csv")
